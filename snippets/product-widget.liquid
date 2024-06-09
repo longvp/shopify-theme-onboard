@@ -1,0 +1,123 @@
+{% comment %}
+  Renders a list of product's price (regular, sale)
+
+  Accepts:
+  - product: {Object} Product Liquid object (optional)
+
+
+  Usage:
+  {% render 'product-widget', product: product %}
+{% endcomment %}
+
+{%- liquid
+  if use_variant
+    assign target = product.selected_or_first_available_variant
+  else
+    assign target = product
+  endif
+
+  assign price = target.price | default: 1999
+
+  assign money_price = price | money
+
+  if settings.currency_code_enabled
+    assign money_price = price | money_with_currency
+  endif
+
+  if target == product and product.price_varies
+    assign money_price = 'products.product.price.from_price_html' | t: price: money_price
+  endif
+-%}
+
+{{ 'product-widget.css' | asset_url | stylesheet_tag }}
+
+<div class="product-widget-container">
+  <div class="tabs-widget">
+    <button class="tab-widget__title" type="button" onclick="onChangeTab(event, 'shipping')">Shiping</button>
+    <button class="tab-widget__title" type="button" onclick="onChangeTab(event, 'discount')">Discount</button>
+  </div>
+  <div id="shipping" class="tab-widget__content">
+    <select id="shipping-methods-select" class="select-option">
+      <option value="standard" selected>Standard Shipping</option>
+      <option value="fast">Fast Shipping</option>
+    </select>
+    <div class="time__container">
+      <div class="time__item">
+        <span class="time__title">Order Date</span>
+        <span class="time__icon">
+          {% render 'icon-carts' %}
+        </span>
+        <span class="time__text" id="order-date"></span>
+      </div>
+      <span class="time__divider"></span>
+      <div class="time__item">
+        <span class="time__title">Delivery Date</span>
+        <span class="time__icon">
+          {% render 'icon-trucks' %}
+        </span>
+        <span class="time__text"><span id="start-date"></span> - <span id="end-date"></span></span>
+      </div>
+    </div>
+  </div>
+  <div id="discount" class="tab-widget__content">
+    <select id="buy-item-select" class="select-option">
+      {% for number in (1..10) %}
+        <option
+          value="{{number}}"
+          {% if number == 1 %}
+            selected
+          {% endif %}
+        >
+          Buy {{ number }} item{% if number > 1 %}s{% endif %}
+        </option>
+      {% endfor %}
+    </select>
+    <table class="table">
+      <tr>
+        <th>Quantity</th>
+        <th>Price</th>
+      </tr>
+      <tr>
+        <td id="td-buy-number-item">1</td>
+        <td id="td-price">{{ product.price | money_with_currency }}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<script src="{{ 'product-widget.js' | asset_url }}" defer="defer"></script>
+<script>
+  // ---------- Handle select at discount tab ----------
+  const buyItemSelect = document.getElementById('buy-item-select');
+  const tdBuyNumberItemElement = document.getElementById('td-buy-number-item');
+  const tdPriceElement = document.getElementById('td-price');
+  const quantityInput = document.querySelector('.quantity__input');
+  const basePrice = {{ product.price }};
+  const currencySymbol = "{{ shop.currency }}";
+  const currencyFormat = "{{ shop.money_format }}"
+
+  const updateQuantityAndDiscount = () => {
+    const selectedQuantity = parseInt(buyItemSelect.value);
+    tdBuyNumberItemElement.textContent = selectedQuantity;
+
+    let percentDiscount = 0;
+    if (selectedQuantity >= 2 && selectedQuantity <= 4) percentDiscount = 10;
+    else if (selectedQuantity >= 5 && selectedQuantity <= 7) percentDiscount = 20;
+    else if (selectedQuantity >= 8 && selectedQuantity <= 10) percentDiscount = 30;
+
+    const discountedPrice = basePrice  - (basePrice  * percentDiscount) / 100;
+    tdPriceElement.textContent = discountedPrice;
+  };
+
+  buyItemSelect.addEventListener('change', () => {
+    const selectedQuantity = parseInt(buyItemSelect.value);
+    quantityInput.value = selectedQuantity;
+    updateQuantityAndDiscount();
+  });
+
+  quantityInput.addEventListener('change', () => {
+    if (quantityInput.value >= 10) buyItemSelect.value = 10;
+    else buyItemSelect.value = quantityInput.value;
+    updateQuantityAndDiscount();
+  });
+</script>
