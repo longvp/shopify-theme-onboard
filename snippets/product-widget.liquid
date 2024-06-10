@@ -33,7 +33,7 @@
 
 <div class="product-widget-container">
   <div class="tabs-widget">
-    <button class="tab-widget__title" type="button" onclick="onChangeTab(event, 'shipping')">Shiping</button>
+    <button class="tab-widget__title active" type="button" onclick="onChangeTab(event, 'shipping')">Shiping</button>
     <button class="tab-widget__title" type="button" onclick="onChangeTab(event, 'discount')">Discount</button>
   </div>
   <div id="shipping" class="tab-widget__content">
@@ -92,6 +92,8 @@
   const tdBuyNumberItemElement = document.getElementById('td-buy-number-item');
   const tdPriceElement = document.getElementById('td-price');
   const quantityInput = document.querySelector('.quantity__input');
+  const buttonMinus = document.querySelector(".quantity__button[name='minus']");
+
   const basePrice = {{ product.price }};
   const currencySymbol = "{{ shop.currency }}";
   const currencyFormat = "{{ shop.money_format }}"
@@ -105,13 +107,14 @@
     else if (selectedQuantity >= 5 && selectedQuantity <= 7) percentDiscount = 20;
     else if (selectedQuantity >= 8 && selectedQuantity <= 10) percentDiscount = 30;
 
-    const discountedPrice = basePrice  - (basePrice  * percentDiscount) / 100;
+    const discountedPrice = basePrice * selectedQuantity - basePrice * selectedQuantity * percentDiscount / 100;
     tdPriceElement.textContent = discountedPrice;
   };
 
   buyItemSelect.addEventListener('change', () => {
     const selectedQuantity = parseInt(buyItemSelect.value);
     quantityInput.value = selectedQuantity;
+    buttonMinus.classList.remove('disabled')
     updateQuantityAndDiscount();
   });
 
